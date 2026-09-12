@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Cold Between Trees</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090c;font-family:Inter,sans-serif;color:#e4e2da;overflow:hidden}
+#hud{position:fixed;top:14px;left:14px;background:rgba(8,10,13,.78);padding:13px 15px;border-radius:10px;z-index:5;max-width:255px}
+#hud h1{font-family:Fraunces,serif;font-weight:600;font-size:18px;margin:0 0 2px;letter-spacing:.04em}
+#hud h1 em{font-style:normal;font-weight:300;color:#8fb4c9}
+#hud .s{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7d8894;margin-bottom:6px}
+#hud .m{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#a8b0b4;line-height:1.7}
+#hud .m b{color:#e4e2da;font-weight:500}
+#stats{position:fixed;top:14px;right:14px;background:rgba(8,10,13,.78);padding:12px 16px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;z-index:5;text-align:right}
+#stats .lbl{color:#7d8894;font-size:9px;letter-spacing:.1em}
+#msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(8,10,13,.85);padding:8px 18px;border-radius:8px;font-family:Fraunces,serif;font-weight:300;font-size:15px;color:#b8cfe0;z-index:5}
+#over{position:fixed;inset:0;background:rgba(4,5,7,.93);display:none;align-items:center;justify-content:center;z-index:10}
+#over .card{background:#0e1216;border:1px solid #2a3540;border-radius:12px;padding:34px 42px;text-align:center;max-width:430px}
+#over h2{font-family:Fraunces,serif;font-weight:300;font-size:30px;margin:0 0 8px}
+#over p{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#a8b0b4;line-height:1.8}
+#over button{margin-top:14px;background:#2a4a5a;border:none;color:#e4e2da;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:13px}
+</style></head><body>
+<div id="hud"><h1>The Cold <em>Between Trees</em></h1>
+<div class="s">keep the fire. do not let it wear the dark.</div>
+<div class="m"><b>wasd</b> walk · the <b>campfire</b> is life<br>gather <b>firewood</b> from the treeline<br>when the trees go quiet, it is close<br>it fears the firelight · <b>stay near the glow</b></div></div>
+<div id="stats"><div class="lbl">FIRE</div><div style="width:120px;height:9px;background:#1c242c;border-radius:4px;margin:4px 0 6px auto"><div id="fire" style="height:100%;width:100%;background:#e8874a;border-radius:4px"></div></div>
+<div class="lbl">WOOD CARRIED</div><div id="wood" style="font-size:16px;color:#d8c98a">0</div>
+<div class="lbl" style="margin-top:5px">DAWN IN</div><div id="dawn" style="font-size:16px;color:#8fb4c9">240</div></div>
+<div id="msg">the fire is warm. the treeline is not.</div>
+<div id="over"><div class="card"><h2 id="ovT"></h2><p id="ovP"></p><button onclick="location.reload()">one more night</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x07090c);scene.fog=new THREE.FogExp2(0x07090c,.045);
+const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,120);
+const ren=new THREE.WebGLRenderer({antialias:true});ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));document.body.appendChild(ren.domElement);
+scene.add(new THREE.AmbientLight(0x30404c,.5));
+const moon=new THREE.DirectionalLight(0x7d94ac,.35);moon.position.set(-20,40,-10);scene.add(moon);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(240,240),new THREE.MeshLambertMaterial({color:0x10171f}));ground.rotation.x=-Math.PI/2;scene.add(ground);
+// snow flecks on ground
+for(let i=0;i<150;i++){const f=new THREE.Mesh(new THREE.CircleGeometry(.14+Math.random()*.3,5),new THREE.MeshBasicMaterial({color:0x2a3540}));
+ f.rotation.x=-Math.PI/2;f.position.set((Math.random()-.5)*160,.02,(Math.random()-.5)*160);scene.add(f);}
+// bare trees
+function tree(x,z,s){const g=new THREE.Group();
+ const mat=new THREE.MeshLambertMaterial({color:0x1c232c});
+ const tr=new THREE.Mesh(new THREE.CylinderGeometry(.18*s,.34*s,7*s,6),mat);tr.position.y=3.5*s;g.add(tr);
+ for(let i=0;i<4;i++){const br=new THREE.Mesh(new THREE.CylinderGeometry(.05*s,.12*s,3*s,5),mat);
+  br.position.set((Math.random()-.5)*s,(4.5+i*.9)*s,(Math.random()-.5)*s);
+  br.rotation.set(Math.random()-.5,0,(Math.random()<.5?1:-1)*(.5+Math.random()*.5));g.add(br);}
+ g.position.set(x,0,z);scene.add(g);}
+for(let i=0;i<60;i++){const a=Math.random()*Math.PI*2,r=26+Math.random()*70;
+ tree(Math.cos(a)*r,Math.sin(a)*r,.7+Math.random()*.8);}
+for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,r=13+Math.random()*12;
+ tree(Math.cos(a)*r,Math.sin(a)*r,.6+Math.random()*.4);}
+// campfire
+const fireG=new THREE.Group();
+for(let i=0;i<5;i++){const log=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.8,6),new THREE.MeshLambertMaterial({color:0x2e2118}));
+ log.rotation.z=Math.PI/2;log.rotation.y=i/5*Math.PI;log.position.y=.14;fireG.add(log);}
+const flame=new THREE.Mesh(new THREE.ConeGeometry(.55,1.5,7),new THREE.MeshBasicMaterial({color:0xe8874a}));flame.position.y=1;fireG.add(flame);
+const flame2=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,6),new THREE.MeshBasicMaterial({color:0xf4c46a}));flame2.position.y=1.1;fireG.add(flame2);
+scene.add(fireG);
+const fireLight=new THREE.PointLight(0xff9a50,1.6,30);fireLight.position.set(0,2.2,0);scene.add(fireLight);
+// player marker (hands? just a lantern the player carries)
+const lamp=new THREE.PointLight(0xf4d9a0,.7,10);scene.add(lamp);
+const player={x:6,z:6};
+// firewood piles
+const woods=[];
+for(let i=0;i<9;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*45;
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,1.6,6),new THREE.MeshLambertMaterial({color:0x4a3826}));
+ m.rotation.z=Math.PI/2;m.rotation.y=Math.random()*3;
+ const x=Math.cos(a)*r,z=Math.sin(a)*r;
+ m.position.set(x,.2,z);scene.add(m);woods.push({m,x,z,got:false});}
+// the wendigo
+const wg=new THREE.Group();
+const wmat=new THREE.MeshLambertMaterial({color:0x0d1116});
+const wbody=new THREE.Mesh(new THREE.CylinderGeometry(.3,.5,3.2,7),wmat);wbody.position.y=2.6;wg.add(wbody);
+const whead=new THREE.Mesh(new THREE.SphereGeometry(.42,8,7),wmat);whead.position.y=4.5;wg.add(whead);
+// antlers
+const amat=new THREE.MeshLambertMaterial({color:0x2a3138});
+[-1,1].forEach(s=>{const a1=new THREE.Mesh(new THREE.CylinderGeometry(.04,.08,1.6,5),amat);
+ a1.position.set(.3*s,5.4,0);a1.rotation.z=s*-.5;wg.add(a1);
+ const a2=new THREE.Mesh(new THREE.CylinderGeometry(.03,.06,1.1,5),amat);
+ a2.position.set(.7*s,5.9,0);a2.rotation.z=s*-1.1;wg.add(a2);});
+const we1=new THREE.Mesh(new THREE.SphereGeometry(.07,6,5),new THREE.MeshBasicMaterial({color:0xd8e8f4}));we1.position.set(-.16,4.55,.36);wg.add(we1);
+const we2=we1.clone();we2.position.x=.16;wg.add(we2);
+const wl1=new THREE.Mesh(new THREE.CylinderGeometry(.09,.14,2.6,6),wmat);wl1.position.set(-.25,1.3,0);wg.add(wl1);
+const wl2=wl1.clone();wl2.position.x=.25;wg.add(wl2);
+wg.position.set(-30,0,-30);scene.add(wg);
+const wendigo={a:Math.random()*7,r:34,stalk:0};
+let fire=100,wood=0,carried=0,dawn=240,sim=0,over=false,quiet=0;
+const keys={};addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function say(s){document.getElementById('msg').textContent=s;}
+function end(won){
+ over=true;
+ document.getElementById('over').style.display='flex';
+ document.getElementById('ovT').textContent=won?'Dawn':'The Cold Between Trees';
+ document.getElementById('ovP').textContent=won?
+  'the sky goes gray, then gold. whatever paced the treeline is gone with the dark. you keep the fire habit the rest of your life.':
+  (fire<=0?'the fire sank to ash an hour before morning. the woods were very quiet about it.':
+  'you saw the antlers above the brush and understood, finally, why the old stories end where they do.');}
+function step(dt){sim+=dt;
+ if(over)return;
+ // fire burns down
+ fire-=dt*(100/240)*1.35;
+ if(fire<=0){fire=0;}
+ const fr=.4+fire/100; // fire radius factor
+ fireLight.intensity=(1.6*fr)*(1+Math.sin(sim*8)*.12);
+ fireLight.distance=30*fr;
+ flame.scale.setScalar(Math.max(.15,fr));
+ flame2.visible=fire>30;
+ // player
+ const sp=8;
+ let mx=0,mz=0;
+ if(keys['w']||keys['arrowup'])mz-=1;if(keys['s']||keys['arrowdown'])mz+=1;
+ if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
+ const ml=Math.hypot(mx,mz);
+ if(ml){player.x+=mx/ml*sp*dt;player.z+=mz/ml*sp*dt;}
+ const R=Math.hypot(player.x,player.z);
+ if(R>85){player.x*=85/R;player.z*=85/R;}
+ lamp.position.set(player.x,2.2,player.z);
+ // gather wood
+ woods.forEach(w=>{if(w.got)return;
+  if(Math.hypot(player.x-w.x,player.z-w.z)<1.8){w.got=true;w.m.visible=false;carried++;wood=carried;
+   document.getElementById('wood').textContent=carried;say('an armful of dry wood.');}});
+ // feed fire
+ if(carried>0&&R<3){fire=Math.min(100,fire+carried*22);say(carried>1?'the fire takes the whole armful gratefully':'the fire takes it gratefully');carried=0;wood=0;document.getElementById('wood').textContent='0';}
+ // wendigo stalking: circles, approaches when fire low or player far from fire
+ const w=wendigo;
+ const distToPlayer=Math.hypot(wg.position.x-player.x,wg.position.z-player.z);
+ const playerFireDist=R;
+ const bold=(100-fire)/100 + playerFireDist/60;
+ w.a+=dt*(.1+bold*.15);
+ const wantR=Math.max(6,30-bold*22);
+ w.r+=(wantR-w.r)*dt*.4;
+ const tx=Math.cos(w.a)*w.r,tz=Math.sin(w.a)*w.r;
+ wg.position.x+=(tx-wg.position.x)*dt*1.2;
+ wg.position.z+=(tz-wg.position.z)*dt*1.2;
+ wg.rotation.y=-w.a+Math.PI/2;
+ wg.position.y=Math.abs(Math.sin(sim*3))*.1;
+ // it charges if player is far from firelight
+ if(playerFireDist>18*fr+6){
+  const dx=player.x-wg.position.x,dz=player.z-wg.position.z,d=Math.hypot(dx,dz);
+  if(d<26){wg.position.x+=dx/d*dt*(4+bold*6);wg.position.z+=dz/d*dt*(4+bold*6);
+   if(Math.random()<dt*.3)say('it is moving through the trees. move.');}}
+ // caught?
+ if(distToPlayer<2.2){end(false);return;}
+ // quiet indicator: when it's close, hint
+ quiet=distToPlayer<16?1:0;
+ if(quiet&&Math.random()<dt*.15)say('the woods have gone quiet.');
+ document.getElementById('fire').style.width=fire+'%';
+ document.getElementById('fire').style.background=fire>50?'#e8874a':fire>25?'#c9a45a':'#c94a3a';
+ dawn-=dt;
+ document.getElementById('dawn').textContent=Math.max(0,Math.ceil(dawn));
+ if(dawn<=0){end(true);return;}
+ if(fire<=0&&R<4&&Math.random()<dt*.2)say('the last ember is barely red.');
+ // camera: third person over shoulder
+ cam.position.lerp(new THREE.Vector3(player.x*.85,6.5,player.z*.85+9),.08);
+ cam.lookAt(player.x,1.6,player.z);}
+let last=0;
+function loop(t){requestAnimationFrame(loop);const dt=Math.min((t-last)/1000,.05)||0;last=t;step(dt);ren.render(scene,cam);}
+loop();
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight);});
+if(location.search.includes('qa=1')){
+ fire=46;dawn=142;player.x=10;player.z=4;carried=1;wood=1;
+ document.getElementById('wood').textContent='1';
+ for(let i=0;i<900;i++)step(1/60);
+ // place wendigo visibly near treeline
+ fire=46;dawn=142;player.x=10;player.z=4;over=false;
+ wg.position.set(-4,0,-14);wg.rotation.y=.8;
+ document.getElementById('fire').style.width='46%';
+ say('the woods have gone quiet.');
+ ren.render(scene,cam);}
+</script></body></html>
